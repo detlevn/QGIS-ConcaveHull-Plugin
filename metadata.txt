@@ -28,9 +28,9 @@ category=Vector
 # tags are comma separated with spaces allowed
 tags=concave hull, region, vector, analysis
 
-homepage=concavehull.org
-tracker=
-repository=
+homepage=https://github.com/detlevn/QGIS-ConcaveHull-Plugin
+tracker=https://github.com/detlevn/QGIS-ConcaveHull-Plugin/issues
+repository=https://github.com/detlevn/QGIS-ConcaveHull-Plugin
 icon=icon.png
 
 # experimental flag
