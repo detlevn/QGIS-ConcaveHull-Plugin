@@ -1,0 +1,40 @@
+# This file contains metadata for your plugin. Beginning
+# with version 1.8 this is the preferred way to supply information about a
+# plugin. The current method of embedding metadata in __init__.py will
+# be supported until version 2.0
+
+# This file should be included when you package your plugin.
+
+# Mandatory items:
+
+[general]
+name=Concave Hull
+qgisMinimumVersion=2.0
+description=Computes a concave hull containing a set of features
+version=1.0
+author=Detlev Neumann, Dr. Neumann Consulting - Geospatial Services
+email=dneumann@geospatial-services.de 
+
+# end of mandatory metadata
+
+# Optional items:
+
+# Uncomment the following line and add your changelog entries:
+category=Vector
+# changelog=
+# 1.0
+# First version published as QGIS plugin
+
+# tags are comma separated with spaces allowed
+tags=concave hull, region, vector, analysis
+
+homepage=concavehull.org
+tracker=
+repository=
+icon=icon.png
+
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version
+deprecated=False
