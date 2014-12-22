@@ -30,7 +30,7 @@ import resources_rc
 from concavehulldialog import ConcaveHullDialog
 import os.path
 import math
-
+from shared_nearest_neighbor_clustering import SSNClusters
 
 class ConcaveHull:
 
@@ -65,7 +65,7 @@ class ConcaveHull:
 
         # Add toolbar button and menu item
         self.iface.addToolBarIcon(self.action)
-        self.iface.addPluginToMenu(u"&Concave Hull", self.action)
+        self.iface.addPluginToVectorMenu(u"&Concave Hull", self.action)
 
     def unload(self):
         """
@@ -118,7 +118,11 @@ class ConcaveHull:
 
     def euclidian_distance(self, point1, point2):
         """
-        Returns the euclidian distance of the 2 given points
+        Returns the euclidian distance of the 2 given points.
+
+        :param point1: tuple (x, y)
+        :param point2: tuple (x, y)
+        :return: float
         """
         return math.sqrt(math.pow(point1[0] - point2[0], 2) + math.pow(point1[1] - point2[1], 2))
 
@@ -128,6 +132,11 @@ class ConcaveHull:
         gibt eine Liste mit den Indizes der k nächsten Nachbarn aus list_of_points zum angegebenen Punkt zurück.
         Das Maß für die Nähe ist die euklidische Distanz. Intern wird k auf das Minimum zwischen dem gegebenen Wert
         für k und der Anzahl der Punkte in list_of_points gesetzt
+
+        :param list_of_points: list of tuples
+        :param point: tuple (x, y)
+        :param k: integer
+        :return: list of k tuples
         """
         # Liste aus den Entfernungen zwischen dem aktuellen Punkt point und den übrigen Punkten in list_of_points
         # berechnen und zusammen mit ihrem Listenindex in list_of_distances ablegen
@@ -135,12 +144,11 @@ class ConcaveHull:
         for index in range(len(list_of_points)):
             list_of_distances.append((self.euclidian_distance(list_of_points[index], point), index))
 
-        # nach den Abständen sortieren
+        # sort distances in ascending order
         list_of_distances.sort()
 
-        # die Indizes der k nächstgelegenen Punkte
+        # get the k nearest neighbors of point
         nearest_list = []
-        #for index in range(min(k, len(list_of_points)-1)):
         for index in range(min(k, len(list_of_points))):
             nearest_list.append((list_of_points[list_of_distances[index][1]]))
         return nearest_list
@@ -148,9 +156,13 @@ class ConcaveHull:
 
     def angle(self, from_point, to_point):
         """
-        gibt den Winkel der durch from_point nach to_point gerichteten Strecke in Radiant zurück
-        (nach oben gerichtet positiv, nach unten negativ, von rechts beginnend nach links bis Pi zunehmend)
-        returns the angle of the line segment in radians
+        Returns the angle of the directed line segment, going from from_point to to_point, in radians. The angle is
+        positive for segments with upward direction (north), otherwise negative (south). Values ranges from 0 at the
+        right (east) to pi at the left side (west).
+
+        :param from_point: tuple (x, y)
+        :param to_point: tuple (x, y)
+        :return: float
         """
         return math.atan2(to_point[1] - from_point[1], to_point[0] - from_point[0])
 
@@ -169,8 +181,11 @@ class ConcaveHull:
 
     def angle_difference(self, angle1, angle2):
         """
-        gibt die Differenz zwischen den gegebenen Winkeln im Uhrzeigersinn zurück (alles in Radiant)
-        Todo: vereinfachen, zusammenfassen wenn möglich
+        Calculates the difference between the given angles in clockwise direction as radians.
+
+        :param angle1: float
+        :param angle2: float
+        :return: float; between 0 and 2*Pi
         """
         if (angle1 > 0 and angle2 >= 0) and angle1 > angle2:
             return abs(angle1 - angle2)
@@ -188,10 +203,13 @@ class ConcaveHull:
             return 0
 
 
-    def intersect_q(self, line1, line2):
+    def intersect(self, line1, line2):
         """
-        returns True if the two given lines segments intersect each other, and False otherwise.
-        gibt True zurück, wenn sich die gegebenen Strecken schneiden, sonst False
+        Returns True if the two given lines segments intersect each other, and False otherwise.
+
+        :param line1: 2-tuple of tuple (x, y)
+        :param line2: 2-tuple of tuple (x, y)
+        :return: boolean
         """
         a1 = line1[1][1] - line1[0][1]
         b1 = line1[0][0] - line1[1][0]
@@ -240,15 +258,19 @@ class ConcaveHull:
                         if p1x == p2x or x <= xints:
                             inside = not inside
             p1x, p1y = p2x, p2y
-        #if not inside:  print(point) ## Debug
+
         return inside
 
 
-    def write_wkt(self, line_string):
+    def write_wkt(self, line_string, file_name):
         """
-        Ausgabe der Hülle als Well Known Text
+        Writes the geometry described by line_string in Well Known Text format to file
+
+        :param line_string: list of tuples (x, y)
+        :return: None
         """
-        file_name = 'hull2.wkt'
+        if file_name is None:
+            file_name = 'hull2.wkt'
         if os.path.isfile(file_name):
             outfile = open(file_name, 'a')
         else:
@@ -260,11 +282,15 @@ class ConcaveHull:
         wkt += '))'
         outfile.write('%s\n' % wkt)
         outfile.close()
+        return None
 
 
     def as_wkt(self, line_string):
         """
-        Rückgabe der Hülle als Well Known Text
+        Returns the geometry described by line_string in Well Known Text format
+
+        :param line_string: list of tuples (x, y)
+        :return: polygon geometry as WTK
         """
         wkt = 'POLYGON((' + str(line_string[0][0]) + ' ' + str(line_string[0][1])
         for p in line_string[1:]:
@@ -286,15 +312,23 @@ class ConcaveHull:
 
     def concave_hull(self, points_list, k):
         """
-        Eingabe: eine Liste von Punkten (points_list) als Liste von Tuplen; Anzahl der Nachbarpunkte (k)
-        Ausgabe: eine sortierte Liste von Stützpunkten, die eine Hülle um die Punkte beschreiben
-        """
-        # wenn die Anzahl der Nachbarn über der Anzahl der gegebenen Punkte liegt bricht das Programm ab,
-        # es kann nicht mehr konvergieren
-        if k > len(points_list):
-             return []  #None
+        Calculates a valid concave hull polygon containing all given points. The algorithm searches for that
+        point in the neighborhood of k nearest neighbors which maximizes the rotation angle in clockwise direction
+        without intersecting any previous line segments.
 
-        # die Anzahl der nächsten Nachbarn muss größer als 3 sein
+        This is an implementation of the algorithm described by Adriano Moreira and Maribel Yasmina Santos:
+        CONCAVE HULL: A K-NEAREST NEIGHBOURS APPROACH FOR THE COMPUTATION OF THE REGION OCCUPIED BY A SET OF POINTS.
+        GRAPP 2007 - International Conference on Computer Graphics Theory and Applications; pp 61-68.
+
+        :param points_list: list of tuples (x, y)
+        :param k: integer
+        :return: list of tuples (x, y)
+        """
+        # return an empty list if not enough points are given
+        if k > len(points_list):
+             return None # []
+
+        # the number of nearest neighbors k must be greater than or equal to 3
         #kk = max(k, 3)
         kk = max(k, 2)
 
@@ -303,53 +337,50 @@ class ConcaveHull:
 
         # if dataset has less then 3 points no polygon can be created and an empty list will be returned
         if len(dataset) < 3:
-            return []  #None
+            return None # []
 
-        # bei 3 Punkten besteht die Hüllkurve aus genau diesen Punkten; es wird der erste Punkt noch einmal
-        # angefügt, damit ein Polygon gebildet werden kann
+        # if dataset has 3 points then these are already vertices of the hull. Append the first point to
+        # close the hull polygon
         if len(dataset) == 3:
             return self.add_point(dataset, dataset[0])
 
         # make sure that k neighbours can be found
         kk = min(kk, len(dataset))
 
-        # es wird mit dem untersten Punkt gestarten
+        # start with the point having the smallest y-coordinate (most southern point)
         first_point = self.find_min_y_point(dataset)
 
-        # die Hülle wird mit diesem Punkt initialisiert
+        # add this points as the first vertex of the hull
         hull = [first_point]
 
-        # der erste Punkt ist jetzt der aktuelle Punkt
+        # make the first vertex of the hull to the current point
         current_point = first_point
 
-        # der erste Punkt wird aus dem Datensatz entfernt
+        # remove the point from the dataset, to prevent him being among the nearest points
         dataset = self.remove_point(dataset, first_point)
         previous_angle = math.pi
 
-        # Step zählt die jeweils neuen Segmente
+        # step counts the number of segments
         step = 2
 
-        # solange die Suche nach der Hülle nicht am Ausgangspunkt angekommen ist oder keine Punkte mehr vorhanden sind
+        # as long as dataset is not empty or search is returning to the starting point
         while (current_point != first_point) or (step == 2) and (len(dataset) > 0):
 
-            # nach 3 Iterationen wird der Startpunkt wieder hinzugefügt, sonst kann ja kein Polygonschluss gebildet werden
+            # after 3 iterations add the first point to dataset again, otherwise a hull cannot be closed
             if step == 5:
                 dataset = self.add_point(dataset, first_point)
 
-            # die nächsten Nachbarn des aktuellen Punktes suchen
+            # search the k nearest neighbors of the current point
             k_nearest_points = self.nearest_points(dataset, current_point, kk)
 
-            # sort the candidates (neighbours) in descending order of right-hand turn
-            # die Kandidaten (Nachbarpunkte) werden in absteigender Reihenfolge ihrer Orientierung zum letzten
-            # Segment der Hülle im Uhrzeigersinn sortiert, d.h. die Hülle soll gegen den Uhrzeigersinn durch möglichst
-            # viele Punkte konstruiert werden
+            # sort the candidates (neighbors) in descending order of right-hand turn. This way the algorithm progresses
+            # in clockwise direction through as many points as possible
             c_points = self.sort_by_angle(k_nearest_points, current_point, previous_angle)
 
             its = True
             i = -1
 
-            # es wird der nächstgelegene Punkt gesucht, dessen Verbindungslinie keines der bereits ermittelten Segmente
-            # schneidet
+            # search for the nearest point to which the connecting line does not intersect any existing segment
             while its is True and (i < len(c_points)-1):
                 i += 1
                 if c_points[i] == first_point:
@@ -360,35 +391,26 @@ class ConcaveHull:
                 its = False
 
                 while its is False and (j < len(hull) - last_point):
-                    its = self.intersect_q((hull[step-2], c_points[i]), (hull[step-2-j], hull[step-1-j]))
+                    its = self.intersect((hull[step-2], c_points[i]), (hull[step-2-j], hull[step-1-j]))
                     j += 1
 
-            # da offenbar alle Verbindungen mit den Kandidaten bestehende Segmente schneiden würde, kommt also keiner von
-            # ihnen in Frage und die Suche wird mit einer größeren Anzahl von Nachbarn erneut gestartet
-            # Todo: möglicherweise ist es sinnvoll nicht global die Nachbarschaft zu vergrößern sondern nur lokal, damit
-            # Todo: Bereiche, die feiner strukturiert werden können, dadurch nicht generalisiert werden
-            # Todo: Solange zurückspringen zu k_nearest_points = nearest_points(dataset, current_point, kk) bis kk==Anzahl
-            # Todo: der Punkte. Sollte dann auch kein geeigneter nächster Punkt gefunden werden, dann alle Zähler
-            # Todo: zurückstellen und die Rekursion starten.
-            #
-            # Todo: nachdem eine Hülle gefunden, aber Punkte übrig sind, werden nur diese erneut bearbeitet. Die zusätzliche
-            # Todo: Hülle darf sich nicht mit einer bereits gefundenen Hülle schneiden, sonst werden die Punkte gelöscht
-
+            # there is no candidate to which the connecting line does not intersect any existing segment, so the
+            # for the next candidate fails. The algorithm starts again with an increased number of neighbors
             if its is True:
                 return self.concave_hull(points_list, kk + 1)
 
-            # der erste Punkt, der die Anforderungen erfüllt, wird zum aktuellen Punkt und an die Hülle angehängt
+            # the first point which complies with the requirements is added to the hull and gets the current point
             current_point = c_points[i]
             hull = self.add_point(hull, current_point)
 
-            # den Winkel des Vektors vom aktuellen Punkt (also jetzt der Endpunkt des letzten Segmentes der Hülle)
-            # zum Vorgänger (also im Prinzip das letzte Segment im umgekehrter Richtung) bestimmen
+            # calculate the angle between the last vertex and his precursor, that is the last segment of the hull
+            # in reversed direction
             previous_angle = self.angle(hull[step - 1], hull[step - 2])
 
             # remove current_point from dataset
             dataset = self.remove_point(dataset, current_point)
 
-            # Schrittzähler erhöhen
+            # increment counter
             step += 1
 
         all_inside = True
@@ -405,141 +427,8 @@ class ConcaveHull:
 
         # a valid hull has been constructed
         #as_segments(hull) ## Debug
-        return [hull]
-
-
-    def concave_hull2(self, points_list, hull_list, k):
-        """
-        Eingabe: eine Liste von Punkten (points_list) als Liste von Tuplen; Anzahl der Nachbarpunkte (k)
-        Ausgabe: eine sortierte Liste von Stützpunkten, die eine Hülle um die Punkte beschreiben
-        """
-        # wenn die Anzahl der Nachbarn über der Anzahl der gegebenen Punkte liegt bricht das Programm ab,
-        # es kann nicht mehr konvergieren
-        if k > len(points_list):
-             return hull_list
-
-        # die Anzahl der nächsten Nachbarn muss größer als 3 sein
-        #kk = max(k, 3)
-        kk = max(k, 2)
-
-        # doppelte Punkte löschen
-        dataset = self.clean_list(points_list)
-        QMessageBox.information(self.iface.mainWindow(), "424dataset", str(len(dataset)))
-
-        # es werden mindestens 3 Punkte benötigt
-        if len(dataset) < 3:
-            return hull_list
-
-        # bei 3 Punkten besteht die Hüllkurve aus genau diesen Punkten; es wird der erste Punkt noch einmal
-        # angefügt, damit ein Polygon gebildet werden kann
-        if len(dataset) == 3:
-            hull_list.append(self.add_point(dataset, dataset[0]))
-            QMessageBox.information(self.iface.mainWindow(), "434hull_list", str(hull_list))
-            return hull_list
-
-        # make sure that k neighbours can be found
-        kk = min(kk, len(dataset))
-
-        # es wird mit dem untersten Punkt gestarten
-        first_point = self.find_min_y_point(dataset)
-
-        # die Hülle wird mit diesem Punkt initialisiert
-        hull = [first_point]
-
-        # der erste Punkt ist jetzt der aktuelle Punkt
-        current_point = first_point
-
-        # der erste Punkt wird aus dem Datensatz entfernt
-        dataset = self.remove_point(dataset, first_point)
-        previous_angle = math.pi
-
-        # Step zählt die jeweils neuen Segmente
-        step = 2
-
-        # solange die Suche nach der Hülle nicht am Ausgangspunkt angekommen ist oder keine Punkte mehr vorhanden sind
-        while (current_point != first_point) or (step == 2) and (len(dataset) > 0):
-
-            # nach 3 Iterationen wird der Startpunkt wieder hinzugefügt, sonst kann ja kein Polygonschluss gebildet werden
-            if step == 5:
-                dataset = self.add_point(dataset, first_point)
-
-            # die nächsten Nachbarn des aktuellen Punktes suchen
-            # Todo: wenn einer der kk Nachbarn deutlich weiter weg liegt, als die kk-1, dann den kk-1. verwenden
-            k_nearest_points = self.nearest_points(dataset, current_point, kk)
-
-            # sort the candidates (neighbours) in descending order of right-hand turn
-            # die Kandidaten (Nachbarpunkte) werden in absteigender Reihenfolge ihrer Orientierung zum letzten
-            # Segment der Hülle im Uhrzeigersinn sortiert, d.h. die Hülle soll gegen den Uhrzeigersinn durch möglichst
-            # viele Punkte konstruiert werden
-            c_points = self.sort_by_angle(k_nearest_points, current_point, previous_angle)
-
-            its = True
-            i = -1
-
-            # es wird der nächstgelegene Punkt gesucht, dessen Verbindungslinie keines der bereits ermittelten Segmente
-            # schneidet
-            while its is True and (i < len(c_points)-1):
-                i += 1
-                if c_points[i] == first_point:
-                    last_point = 1
-                else:
-                    last_point = 0
-                j = 2
-                its = False
-
-                while its is False and (j < len(hull) - last_point):
-                    its = self.intersect_q((hull[step-2], c_points[i]), (hull[step-2-j], hull[step-1-j]))
-                    j += 1
-
-            # da offenbar alle Verbindungen mit den Kandidaten bestehende Segmente schneiden würde, kommt also keiner von
-            # ihnen in Frage und die Suche wird mit einer größeren Anzahl von Nachbarn erneut gestartet
-            #
-            # Todo Die zusätzliche Hülle darf sich nicht mit einer bereits gefundenen Hülle schneiden, sonst werden die Punkte gelöscht
-
-            if its is True:
-                return self.concave_hull2(points_list, hull_list, kk + 1)
-
-            # der erste Punkt, der die Anforderungen erfüllt, wird zum aktuellen Punkt und an die Hülle angehängt
-            current_point = c_points[i]
-            hull = self.add_point(hull, current_point)
-
-            # den Winkel des Vektors vom aktuellen Punkt (also jetzt der Endpunkt des letzten Segmentes der Hülle)
-            # zum Vorgänger (also im Prinzip das letzte Segment im umgekehrter Richtung) bestimmen
-            previous_angle = self.angle(hull[step - 1], hull[step - 2])
-
-            # remove current_point from dataset
-            dataset = self.remove_point(dataset, current_point)
-
-            # Schrittzähler erhöhen
-            step += 1
-
-        all_inside = True
-        i = len(dataset)-1
-
-        hull_list.append(hull)
-
-        # check if all points are within the created polygon
-        while (all_inside is True) and (i >= 0):
-            all_inside = self.point_in_polygon_q(dataset[i], hull)
-            i -= 1
-
-        # Wurde eine Hülle gefunden, sind aber Punkte übrig sind und liegen davon welche außerhalb,
-        # erfolgt die Berechnung eines weiteren Polygons für diese Teilmenge .
-        QMessageBox.information(self.iface.mainWindow(), "532hull_list", str(hull_list))
-        if all_inside is False:
-
-            i = len(dataset)-1
-            while i >= 0:
-                if self.point_in_polygon_q(dataset[i], hull) is True:
-                    dataset.pop(i)
-                i -= 1
-
-            QMessageBox.information(self.iface.mainWindow(), "544dataset", str(dataset))
-            return self.concave_hull2(dataset, hull_list, 3) # kk?
-
-        # One or more hulls have been constructed
-        #as_segments(hull) ## Debug
-        return hull_list
+        #return [hull]
+        return hull
 
 
     def enableUseOfGlobalCrs(self):
@@ -600,40 +489,53 @@ class ConcaveHull:
         """
         Generate list of QgsPoints from QgsGeometry *geom* ( can be point, line, or polygon )
         Code taken from fTools plugin
+
+        :param geom: an arbitrary geometry feature
+        :return: list of points
         """
         multi_geom = QgsGeometry()
         temp_geom = []
-        if geom.type() == 0: # it's a point
+        # point geometry
+        if geom.type() == 0:
             if geom.isMultipart():
                 temp_geom = geom.asMultiPoint()
             else:
                 temp_geom.append(geom.asPoint())
-        if geom.type() == 1: # it's a line
+        # line geometry
+        if geom.type() == 1:
+            # if multipart feature explode to single part
             if geom.isMultipart():
-                multi_geom = geom.asMultiPolyline() #multi_geog is a multiline
-                for i in multi_geom: #i is a line
+                multi_geom = geom.asMultiPolyline()
+                for i in multi_geom:
                     temp_geom.extend( i )
             else:
                 temp_geom = geom.asPolyline()
-        elif geom.type() == 2: # it's a polygon
+        # polygon geometry
+        elif geom.type() == 2:
+            # if multipart feature explode to single part
             if geom.isMultipart():
-                multi_geom = geom.asMultiPolygon() #multi_geom is a multipolygon
-                for i in multi_geom: #i is a polygon
-                    for j in i: #j is a line
+                multi_geom = geom.asMultiPolygon()
+                # now single part polygons
+                for i in multi_geom:
+                    # explode to line segments
+                    for j in i:
                         temp_geom.extend( j )
             else:
-                multi_geom = geom.asPolygon() #multi_geom is a polygon
-                for i in multi_geom: #i is a line
+                multi_geom = geom.asPolygon()
+                # explode to line segments
+                for i in multi_geom:
                     temp_geom.extend( i )
         return temp_geom
 
 
     def getVectorLayersByType(self, geomType=None, skipActive=False):
         """
-        Returns a dict of layers [name: id] in the project for the given *geomType*;
-        geomTypes are 0: point, 1: line, 2: polygon
-        If *skipActive* is True the active Layer is not included.
-        code taken from DigitizingTools plugin, (C) 2013 by Bernhard Stroebl
+        Returns a dict of layers [name: id] in the project for the given geomType.
+        If skipActive is True the active layer is not included.
+        Code taken from DigitizingTools plugin, (C) 2013 by Bernhard Stroebl
+
+        :param geomType: integer; geomTypes are 0: point, 1: line, 2: polygon
+        :return: dict of layers with given geometry type
         """
         layerList = {}
         for aLayer in self.iface.legendInterface().layers():
@@ -650,14 +552,21 @@ class ConcaveHull:
         return layerList
 
 
-    def setOutputLayerComboBox(self, index=None):
-        # Todo: Geometrietyp beruecksichtigen !!
+    def setOutputLayerComboBox(self, geomType=None, index=None):
+        """
+        Populates the ComboBox with all layers of the given geometry type geomType, and sets
+        currentIndex to the entry named index.
+
+        :param geomType: integer; geomTypes are 0: point, 1: line, 2: polygon
+        :param index: string; name of the ComboBox entry to set currentIndex to
+        :return: None
+        """
         self.dlg.cb_output.clear()
-        layer_list = self.getVectorLayersByType(2, False)
+        layer_list = self.getVectorLayersByType(geomType, False)
         if len(layer_list) > 0:
             lid = 0
             for aName in layer_list:
-                self.dlg.cb_output.addItem("")
+                self.dlg.cb_output.addItem('')
                 self.dlg.cb_output.setItemText(lid, aName)
                 if aName == index:
                     self.dlg.cb_output.setCurrentIndex(lid)
@@ -683,13 +592,14 @@ class ConcaveHull:
             self.dlg.cb_selected_only.setEnabled(True)
             self.dlg.cb_selected_only.setChecked(True)
         else:
+            self.dlg.cb_selected_only.setChecked(False)
             self.dlg.cb_selected_only.setEnabled(False)
 
         # initialize cb_output
         # remember the layer being selected the last time
         lbid = self.dlg.cb_output.currentText()
         # populate the combo box with the polygon layers listed in the current legend
-        self.setOutputLayerComboBox(lbid)
+        self.setOutputLayerComboBox(2, lbid)
 
         # show the dialog
         self.dlg.show()
@@ -711,17 +621,26 @@ class ConcaveHull:
                     for feat in active_layer.getFeatures():
                         geom.extend(self.extractPoints(feat.geometry()))
 
+            if len(geom) == 0:
+                return None
+
             # generate the hull geometry
-            ##QMessageBox.information(self.iface.mainWindow(), "geom", str(geom))
-            the_hull = self.concave_hull(geom, self.dlg.sb_neighbors.value())
+            # process points with prior clustering
+            # Todo: Warning ausgeben, wenn Anzahl der Punkte > ??? ist (kann sehr lange dauern!)
+            if self.dlg.gb_clustering.isChecked():
+                clusters = SSNClusters(geom, self.dlg.sb_neighborhood_list_size.value()).get_clusters()
+                for cluster in clusters.keys():
+                    the_hull = self.concave_hull(clusters[cluster], self.dlg.sb_neighbors.value())
+                    if the_hull:
+                        self.createOutputFeature(self.as_wkt(the_hull), self.dlg.cb_output.currentText())
+            else:
+                # process points without clustering
+                the_hull = self.concave_hull(geom, self.dlg.sb_neighbors.value())
+                self.createOutputFeature(self.as_wkt(the_hull), self.dlg.cb_output.currentText())
+
             ##the_hull = self.concave_hull2(geom, [], self.dlg.sb_neighbors.value())
             ##QMessageBox.information(self.iface.mainWindow(), "hull711", str(the_hull))
+            ##for part in the_hull:
+            ##    self.createOutputFeature(self.as_wkt(part), self.dlg.cb_output.currentText())
 
-            # write hull geometry to memory layer
-            ##self.createOutputFeature(self.as_wkt(the_hull), self.dlg.cb_output.currentText())
-            for part in the_hull:
-                #QMessageBox.information(self.iface.mainWindow(), "hull", str(the_hull))
-                #QMessageBox.information(self.iface.mainWindow(), "part", str(part))
-                self.createOutputFeature(self.as_wkt(part), self.dlg.cb_output.currentText())
-
-            pass
+            return None
