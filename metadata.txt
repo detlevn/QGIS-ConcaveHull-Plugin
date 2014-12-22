@@ -12,7 +12,7 @@ name=Concave Hull
 qgisMinimumVersion=2.0
 description=Computes a concave hull containing a set of features
 version=1.0
-author=Detlev Neumann, Dr. Neumann Consulting - Geospatial Services
+author=Detlev Neumann, Geospatial Services
 email=dneumann@geospatial-services.de 
 
 # end of mandatory metadata
