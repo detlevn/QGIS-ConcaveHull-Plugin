@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui_concavehull.ui'
+# Form implementation generated from reading ui file 'e:\0000200_Entwicklung\ConcaveHull_for_QGIS\concavehull\ui_concavehull.ui'
 #
-# Created: Fri Nov 28 18:30:09 2014
+# Created: Wed Jan 07 17:39:34 2015
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -152,7 +152,7 @@ class Ui_ConcaveHull(object):
     def retranslateUi(self, ConcaveHull):
         ConcaveHull.setWindowTitle(_translate("ConcaveHull", "ConcaveHull", None))
         self.groupBox.setTitle(_translate("ConcaveHull", "Number of neighbors", None))
-        self.gb_clustering.setTitle(_translate("ConcaveHull", "Find clusters", None))
+        self.gb_clustering.setTitle(_translate("ConcaveHull", "Find SNN clusters", None))
         self.label.setText(_translate("ConcaveHull", "Neighborhood size", None))
         self.groupBox_2.setTitle(_translate("ConcaveHull", "Input layers", None))
         self.cb_selected_only.setText(_translate("ConcaveHull", "Use selected features only", None))

@@ -23,6 +23,7 @@
 # Import the PyQt and QGIS libraries
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+
 from qgis.core import *
 # Initialize Qt resources from file resources.py
 import resources_rc
@@ -30,7 +31,7 @@ import resources_rc
 from concavehulldialog import ConcaveHullDialog
 import os.path
 import math
-from shared_nearest_neighbor_clustering import SSNClusters
+from shared_nearest_neighbor_clustering import ssn_clusters
 
 class ConcaveHull:
 
@@ -91,7 +92,10 @@ class ConcaveHull:
 
     def find_min_y_point(self, list_of_points):
         """
-        gibt denjenigen Punkt der list_of_points mit der kleinsten Y-Koordinate zurück, also den südlichsten Punkt
+        Returns that point of *list_of_points* having minimal y-coordinate
+
+        :param list_of_points: list of tuples
+        :return: tuple (x, y)
         """
         min_y_pt = list_of_points[0]
         for point in list_of_points[1:]:
@@ -138,8 +142,8 @@ class ConcaveHull:
         :param k: integer
         :return: list of k tuples
         """
-        # Liste aus den Entfernungen zwischen dem aktuellen Punkt point und den übrigen Punkten in list_of_points
-        # berechnen und zusammen mit ihrem Listenindex in list_of_distances ablegen
+        # build a list of tuples of distances between point *point* and every point in *list_of_points*, and
+        # their respective index of list *list_of_distances*
         list_of_distances = []
         for index in range(len(list_of_points)):
             list_of_distances.append((self.euclidian_distance(list_of_points[index], point), index))
@@ -156,7 +160,7 @@ class ConcaveHull:
 
     def angle(self, from_point, to_point):
         """
-        Returns the angle of the directed line segment, going from from_point to to_point, in radians. The angle is
+        Returns the angle of the directed line segment, going from *from_point* to *to_point*, in radians. The angle is
         positive for segments with upward direction (north), otherwise negative (south). Values ranges from 0 at the
         right (east) to pi at the left side (west).
 
@@ -205,7 +209,7 @@ class ConcaveHull:
 
     def intersect(self, line1, line2):
         """
-        Returns True if the two given lines segments intersect each other, and False otherwise.
+        Returns True if the two given line segments intersect each other, and False otherwise.
 
         :param line1: 2-tuple of tuple (x, y)
         :param line2: 2-tuple of tuple (x, y)
@@ -233,12 +237,11 @@ class ConcaveHull:
 
     def point_in_polygon_q(self, point, list_of_points):
         """
-        gibt True zurück, wenn der gegebene Punkt innerhalb des durch die list_of_points bezeichneten Polygons liegt,
-        sonst False. Die Funktion prüft, mit wievielen Segmenten sich die Strecke ((0,0), point) schneidet. Bei einer
-        ungerade Anzahl von Schnitten liegt der Punkt innerhalb, sonst außerhalb des bezeichneten Polygons.
+        Return True if given point *point* is laying in the polygon described by the vertices *list_of_points*,
+        otherwise False
 
-        Basierend auf der "Ray Casting Method" u.a. beschrieben im Blog
-        http://geospatialpython.com/2011/01/point-in-polygon.html von Joel Lawhead
+        Based on the "Ray Casting Method" described by Joel Lawhead in this blog article:
+        http://geospatialpython.com/2011/01/point-in-polygon.html
 
         """
         x = point[0]
@@ -537,19 +540,19 @@ class ConcaveHull:
         :param geomType: integer; geomTypes are 0: point, 1: line, 2: polygon
         :return: dict of layers with given geometry type
         """
-        layerList = {}
-        for aLayer in self.iface.legendInterface().layers():
-            if 0 == aLayer.type():   # vectorLayer
-                if skipActive and (self.iface.mapCanvas().currentLayer().id() == aLayer.id()):
+        layer_list = {}
+        for layer in self.iface.legendInterface().layers():
+            if 0 == layer.type():   # vectorLayer
+                if skipActive and (self.iface.mapCanvas().currentLayer().id() == layer.id()):
                     continue
                 else:
                     if geomType is not None:
                         if isinstance(geomType,  int):
-                            if aLayer.geometryType() == geomType:
-                                layerList[aLayer.name()] =  aLayer.id()
+                            if layer.geometryType() == geomType:
+                                layer_list[layer.name()] =  layer.id()
                         else:
-                            layerList[aLayer.name()] =  aLayer.id()
-        return layerList
+                            layer_list[layer.name()] =  layer.id()
+        return layer_list
 
 
     def setOutputLayerComboBox(self, geomType=None, index=None):
@@ -628,7 +631,7 @@ class ConcaveHull:
             # process points with prior clustering
             # Todo: Warning ausgeben, wenn Anzahl der Punkte > ??? ist (kann sehr lange dauern!)
             if self.dlg.gb_clustering.isChecked():
-                clusters = SSNClusters(geom, self.dlg.sb_neighborhood_list_size.value()).get_clusters()
+                clusters = ssn_clusters(geom, self.dlg.sb_neighborhood_list_size.value()).get_clusters()
                 for cluster in clusters.keys():
                     the_hull = self.concave_hull(clusters[cluster], self.dlg.sb_neighbors.value())
                     if the_hull:
@@ -637,10 +640,5 @@ class ConcaveHull:
                 # process points without clustering
                 the_hull = self.concave_hull(geom, self.dlg.sb_neighbors.value())
                 self.createOutputFeature(self.as_wkt(the_hull), self.dlg.cb_output.currentText())
-
-            ##the_hull = self.concave_hull2(geom, [], self.dlg.sb_neighbors.value())
-            ##QMessageBox.information(self.iface.mainWindow(), "hull711", str(the_hull))
-            ##for part in the_hull:
-            ##    self.createOutputFeature(self.as_wkt(part), self.dlg.cb_output.currentText())
 
             return None
