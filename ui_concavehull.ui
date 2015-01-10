@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>327</width>
-    <height>435</height>
+    <width>388</width>
+    <height>560</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,12 +28,15 @@
        <height>62</height>
       </size>
      </property>
+     <property name="toolTip">
+      <string>Specify the number of nearest neighbors to start with</string>
+     </property>
      <property name="title">
       <string>Number of neighbors</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QSlider" name="horizontalSlider">
+       <widget class="QSlider" name="hs_neighbors">
         <property name="minimum">
          <number>2</number>
         </property>
@@ -81,6 +84,9 @@
        <height>0</height>
       </size>
      </property>
+     <property name="toolTip">
+      <string>Check and specify a neighborhood size to cluster the data prior constructing a hull</string>
+     </property>
      <property name="title">
       <string>Find SNN clusters</string>
      </property>
@@ -91,6 +97,12 @@
       <bool>false</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_4">
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
       <item>
        <widget class="QFrame" name="frame">
         <property name="sizePolicy">
@@ -156,7 +168,7 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QSlider" name="horizontalSlider_2">
+          <widget class="QSlider" name="hs_neighborhood_list_size">
            <property name="minimum">
             <number>5</number>
            </property>
@@ -210,6 +222,9 @@
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QListWidget" name="ls_layers">
+        <property name="toolTip">
+         <string>Select one or more input layers</string>
+        </property>
         <property name="selectionMode">
          <enum>QAbstractItemView::ExtendedSelection</enum>
         </property>
@@ -217,6 +232,9 @@
       </item>
       <item>
        <widget class="QCheckBox" name="cb_selected_only">
+        <property name="toolTip">
+         <string>Use only selected features on input layers</string>
+        </property>
         <property name="text">
          <string>Use selected features only</string>
         </property>
@@ -226,19 +244,143 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_3">
+    <widget class="QGroupBox" name="gb_output">
      <property name="title">
       <string>Output layer</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
-       <widget class="QComboBox" name="cb_output">
-        <property name="toolTip">
-         <string>Layername eingeben oder einen Layer aus der Liste wählen</string>
+       <widget class="QRadioButton" name="rb_new_memory_layer">
+        <property name="text">
+         <string>New memory layer</string>
         </property>
-        <property name="editable">
+        <property name="checked">
          <bool>true</bool>
         </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <property name="leftMargin">
+         <number>20</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLineEdit" name="ed_memory_layer">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="toolTip">
+           <string>Type in the name of a new memory layer</string>
+          </property>
+          <property name="text">
+           <string>ConcaveHull</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rb_existing_layer">
+        <property name="text">
+         <string>Existing layer</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <property name="leftMargin">
+         <number>20</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QComboBox" name="cb_output">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>Choose an existing polygon layer from the list</string>
+          </property>
+          <property name="editable">
+           <bool>false</bool>
+          </property>
+          <property name="currentIndex">
+           <number>-1</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rb_shapefile">
+        <property name="text">
+         <string>New shapefile</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="widget" native="true">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <property name="leftMargin">
+          <number>20</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QLineEdit" name="ed_output_layer">
+             <property name="toolTip">
+              <string>Browse for the location of a new or existing Shape file</string>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="bt_file_browser">
+             <property name="toolTip">
+              <string>Browse for the location of a new or existing Shape file</string>
+             </property>
+             <property name="text">
+              <string>Browse ...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="cb_add_to_map">
+           <property name="toolTip">
+            <string>Add the new layer to the map</string>
+           </property>
+           <property name="text">
+            <string>Add result to map</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
@@ -265,8 +407,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>227</x>
-     <y>301</y>
+     <x>245</x>
+     <y>550</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -281,8 +423,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>292</y>
+     <x>326</x>
+     <y>550</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
@@ -291,7 +433,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>horizontalSlider</sender>
+   <sender>hs_neighbors</sender>
    <signal>sliderMoved(int)</signal>
    <receiver>sb_neighbors</receiver>
    <slot>setValue(int)</slot>
@@ -301,20 +443,20 @@
      <y>43</y>
     </hint>
     <hint type="destinationlabel">
-     <x>278</x>
-     <y>43</y>
+     <x>368</x>
+     <y>54</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>sb_neighbors</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider</receiver>
+   <receiver>hs_neighbors</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>292</x>
-     <y>47</y>
+     <x>368</x>
+     <y>54</y>
     </hint>
     <hint type="destinationlabel">
      <x>149</x>
@@ -323,34 +465,82 @@
    </hints>
   </connection>
   <connection>
-   <sender>horizontalSlider_2</sender>
+   <sender>hs_neighborhood_list_size</sender>
    <signal>sliderMoved(int)</signal>
    <receiver>sb_neighborhood_list_size</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>213</x>
-     <y>109</y>
+     <x>232</x>
+     <y>140</y>
     </hint>
     <hint type="destinationlabel">
-     <x>278</x>
-     <y>108</y>
+     <x>368</x>
+     <y>138</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>sb_neighborhood_list_size</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider_2</receiver>
+   <receiver>hs_neighborhood_list_size</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>293</x>
-     <y>97</y>
+     <x>368</x>
+     <y>138</y>
     </hint>
     <hint type="destinationlabel">
-     <x>224</x>
-     <y>98</y>
+     <x>243</x>
+     <y>140</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rb_shapefile</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>widget</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>62</x>
+     <y>439</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>36</x>
+     <y>467</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rb_new_memory_layer</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>ed_memory_layer</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>97</x>
+     <y>389</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>107</x>
+     <y>410</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rb_existing_layer</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>cb_output</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>168</x>
+     <y>339</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>171</x>
+     <y>360</y>
     </hint>
    </hints>
   </connection>

@@ -22,8 +22,8 @@
 
 from PyQt4 import QtCore, QtGui
 from ui_concavehull import Ui_ConcaveHull
-# create the dialog for zoom to point
 
+import os
 
 class ConcaveHullDialog(QtGui.QDialog, Ui_ConcaveHull):
     def __init__(self):
@@ -34,3 +34,49 @@ class ConcaveHullDialog(QtGui.QDialog, Ui_ConcaveHull):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+
+        # enable Ok button only if at least one input layer is selected
+        self.ls_layers.itemSelectionChanged.connect(self.ls_layers_changed)
+
+        # connect events to handlers to ensure proper behaviour
+        self.bt_file_browser.clicked.connect(self.file_browser)
+        self.rb_shapefile.toggled.connect(self.rb_shapefile_toggled)
+        self.rb_existing_layer.toggled.connect(self.rb_existing_layer_toggled)
+        self.rb_new_memory_layer.toggled.connect(self.rb_new_memory_layer_toggled)
+        self.ed_memory_layer.textChanged.connect(self.rb_new_memory_layer_toggled)
+        self.ed_output_layer.textChanged.connect(self.rb_shapefile_toggled)
+
+    def ls_layers_changed(self):
+        if self.ls_layers.selectedItems():
+            self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+        else:
+            self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+
+    def rb_shapefile_toggled(self):
+        if self.rb_shapefile.isChecked():
+            if self.ed_output_layer.text() and self.ls_layers.selectedItems():
+                self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+            else:
+                self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+
+    def rb_existing_layer_toggled(self):
+        if self.rb_existing_layer.isChecked():
+            if self.cb_output.currentIndex() > -1 and self.ls_layers.selectedItems():
+                self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+            else:
+                self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+
+    def rb_new_memory_layer_toggled(self):
+        if self.rb_new_memory_layer.isChecked():
+            if self.ed_memory_layer.text() and self.ls_layers.selectedItems():
+                self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+            else:
+                self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+
+    def file_browser(self):
+        filename = QtGui.QFileDialog.getSaveFileName(self, "Open file", "", "Shapefile (*.shp);;All files (*)")
+        filename = os.path.splitext(str(filename))[0]+".shp"
+        layer_name = os.path.splitext(os.path.basename(str(filename)))[0]
+        if layer_name == ".shp":
+            return
+        self.ed_output_layer.setText(filename)

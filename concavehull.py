@@ -23,15 +23,25 @@
 # Import the PyQt and QGIS libraries
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-
 from qgis.core import *
+from qgis.gui import QgsMessageBar
+
 # Initialize Qt resources from file resources.py
 import resources_rc
+
 # Import the code for the dialog
 from concavehulldialog import ConcaveHullDialog
 import os.path
 import math
-from shared_nearest_neighbor_clustering import ssn_clusters
+from shared_nearest_neighbor_clustering import SSNClusters
+
+try:
+    _encoding = QApplication.UnicodeUTF8
+    def _translate(context, text, disambig):
+        return QApplication.translate(context, text, disambig, _encoding)
+except AttributeError:
+    def _translate(context, text, disambig):
+        return QApplication.translate(context, text, disambig)
 
 class ConcaveHull:
 
@@ -54,6 +64,9 @@ class ConcaveHull:
         # Create the dialog (after translation) and keep reference
         self.dlg = ConcaveHullDialog()
 
+        # get reference to the QGIS message bar
+        self.msg_bar = self.iface.messageBar()
+
     def initGui(self):
         """
         Create action that will start plugin configuration
@@ -72,9 +85,8 @@ class ConcaveHull:
         """
         Remove the plugin menu item and icon
         """
-        self.iface.removePluginMenu(u"&Concave Hull", self.action)
+        self.iface.removePluginVectorMenu(u"&Concave Hull", self.action)
         self.iface.removeToolBarIcon(self.action)
-
 
     def clean_list(self, list_of_points):
         """
@@ -82,13 +94,11 @@ class ConcaveHull:
         """
         return list(set(list_of_points))
 
-
     def length(self, vector):
         """
         Returns the number of elements in vector
         """
         return len(vector)
-
 
     def find_min_y_point(self, list_of_points):
         """
@@ -103,7 +113,6 @@ class ConcaveHull:
                 min_y_pt = point
         return min_y_pt
 
-
     def remove_point(self, vector, element):
         """
         Returns a copy of vector without the given element
@@ -111,14 +120,12 @@ class ConcaveHull:
         vector.pop(vector.index(element))
         return vector
 
-
     def add_point(self, vector, element):
         """
         Returns vector with the given element append to the right
         """
         vector.append(element)
         return vector
-
 
     def euclidian_distance(self, point1, point2):
         """
@@ -129,7 +136,6 @@ class ConcaveHull:
         :return: float
         """
         return math.sqrt(math.pow(point1[0] - point2[0], 2) + math.pow(point1[1] - point2[1], 2))
-
 
     def nearest_points(self, list_of_points, point, k):
         """
@@ -157,7 +163,6 @@ class ConcaveHull:
             nearest_list.append((list_of_points[list_of_distances[index][1]]))
         return nearest_list
 
-
     def angle(self, from_point, to_point):
         """
         Returns the angle of the directed line segment, going from *from_point* to *to_point*, in radians. The angle is
@@ -170,7 +175,6 @@ class ConcaveHull:
         """
         return math.atan2(to_point[1] - from_point[1], to_point[0] - from_point[0])
 
-
     def sort_by_angle(self, list_of_points, last_point, last_angle):
         """
         gibt die Punkte in list_of_points in absteigender Reihenfolge des Winkels zum letzten Segment der Hülle zurück,
@@ -179,9 +183,9 @@ class ConcaveHull:
         """
         def getkey(item):
             return self.angle_difference(last_angle, self.angle(last_point, item))
+
         vertex_list = sorted(list_of_points, key=getkey, reverse=True)
         return vertex_list
-
 
     def angle_difference(self, angle1, angle2):
         """
@@ -205,7 +209,6 @@ class ConcaveHull:
             return angle1 + abs(angle2)
         else:
             return 0
-
 
     def intersect(self, line1, line2):
         """
@@ -233,7 +236,6 @@ class ConcaveHull:
                 (sy < line1[0][1] and sy < line1[1][1]) or (sy < line2[0][1] and sy < line2[1][1]):
             return False
         return True
-
 
     def point_in_polygon_q(self, point, list_of_points):
         """
@@ -264,7 +266,6 @@ class ConcaveHull:
 
         return inside
 
-
     def write_wkt(self, line_string, file_name):
         """
         Writes the geometry described by line_string in Well Known Text format to file
@@ -287,7 +288,6 @@ class ConcaveHull:
         outfile.close()
         return None
 
-
     def as_wkt(self, line_string):
         """
         Returns the geometry described by line_string in Well Known Text format
@@ -301,7 +301,6 @@ class ConcaveHull:
         wkt += '))'
         return wkt
 
-
     def write_segments(self, linestring):
         """
         nur zum Debuggen: Ausgabe der Hülle für die reachable-Webseite
@@ -311,7 +310,6 @@ class ConcaveHull:
             outfile.write('hull\t%s\t%s\t%s\t%s\n' % (linestring[p][0], linestring[p][1],
                                                             linestring[p+1][0], linestring[p+1][1]))
         outfile.close()
-
 
     def concave_hull(self, points_list, k):
         """
@@ -329,29 +327,29 @@ class ConcaveHull:
         """
         # return an empty list if not enough points are given
         if k > len(points_list):
-             return None # []
+            return None
 
         # the number of nearest neighbors k must be greater than or equal to 3
-        #kk = max(k, 3)
+        # kk = max(k, 3)
         kk = max(k, 2)
 
         # delete duplicate points
-        dataset = self.clean_list(points_list)
+        point_set = self.clean_list(points_list)
 
-        # if dataset has less then 3 points no polygon can be created and an empty list will be returned
-        if len(dataset) < 3:
-            return None # []
+        # if point_set has less then 3 points no polygon can be created and an empty list will be returned
+        if len(point_set) < 3:
+            return None
 
-        # if dataset has 3 points then these are already vertices of the hull. Append the first point to
+        # if point_set has 3 points then these are already vertices of the hull. Append the first point to
         # close the hull polygon
-        if len(dataset) == 3:
-            return self.add_point(dataset, dataset[0])
+        if len(point_set) == 3:
+            return self.add_point(point_set, point_set[0])
 
         # make sure that k neighbours can be found
-        kk = min(kk, len(dataset))
+        kk = min(kk, len(point_set))
 
         # start with the point having the smallest y-coordinate (most southern point)
-        first_point = self.find_min_y_point(dataset)
+        first_point = self.find_min_y_point(point_set)
 
         # add this points as the first vertex of the hull
         hull = [first_point]
@@ -359,22 +357,22 @@ class ConcaveHull:
         # make the first vertex of the hull to the current point
         current_point = first_point
 
-        # remove the point from the dataset, to prevent him being among the nearest points
-        dataset = self.remove_point(dataset, first_point)
+        # remove the point from the point_set, to prevent him being among the nearest points
+        point_set = self.remove_point(point_set, first_point)
         previous_angle = math.pi
 
         # step counts the number of segments
         step = 2
 
-        # as long as dataset is not empty or search is returning to the starting point
-        while (current_point != first_point) or (step == 2) and (len(dataset) > 0):
+        # as long as point_set is not empty or search is returning to the starting point
+        while (current_point != first_point) or (step == 2) and (len(point_set) > 0):
 
-            # after 3 iterations add the first point to dataset again, otherwise a hull cannot be closed
+            # after 3 iterations add the first point to point_set again, otherwise a hull cannot be closed
             if step == 5:
-                dataset = self.add_point(dataset, first_point)
+                point_set = self.add_point(point_set, first_point)
 
             # search the k nearest neighbors of the current point
-            k_nearest_points = self.nearest_points(dataset, current_point, kk)
+            k_nearest_points = self.nearest_points(point_set, current_point, kk)
 
             # sort the candidates (neighbors) in descending order of right-hand turn. This way the algorithm progresses
             # in clockwise direction through as many points as possible
@@ -410,21 +408,21 @@ class ConcaveHull:
             # in reversed direction
             previous_angle = self.angle(hull[step - 1], hull[step - 2])
 
-            # remove current_point from dataset
-            dataset = self.remove_point(dataset, current_point)
+            # remove current_point from point_set
+            point_set = self.remove_point(point_set, current_point)
 
             # increment counter
             step += 1
 
         all_inside = True
-        i = len(dataset)-1
+        i = len(point_set)-1
 
         # check if all points are within the created polygon
         while (all_inside is True) and (i >= 0):
-            all_inside = self.point_in_polygon_q(dataset[i], hull)
+            all_inside = self.point_in_polygon_q(point_set[i], hull)
             i -= 1
 
-        # since at least one point is out of the computed polygon, try again with a higher number of neighbours
+        # since at least one point is out of the computed polygon, try again with a higher number of neighbors
         if all_inside is False:
             return self.concave_hull(points_list, kk + 1)
 
@@ -433,11 +431,12 @@ class ConcaveHull:
         #return [hull]
         return hull
 
-
-    def enableUseOfGlobalCrs(self):
+    def enable_use_of_global_CRS(self):
         """
         Set new layers to use the project CRS.
         Code snipped taken from http://pyqgis.blogspot.co.nz/2012/10/basics-automatic-use-of-crs-for-new.html
+
+        Example: old_behaviour = enable_use_of_global_CRS()
 
         :return: string
         """
@@ -446,10 +445,11 @@ class ConcaveHull:
         settings.setValue('/Projections/defaultBehaviour', 'useProject')
         return old_behaviour
 
-
-    def disableUseOfGlobalCrs(self, default_behaviour='prompt'):
+    def disable_use_of_global_CRS(self, default_behaviour='prompt'):
         """
         Enables old settings again. If argument is missing then set behaviour to prompt.
+
+        Example: disable_use_of_global_CRS(old_behaviour)
 
         :param default_behaviour:
         :return: None
@@ -458,37 +458,69 @@ class ConcaveHull:
         settings.setValue('/Projections/defaultBehaviour', default_behaviour)
         return None
 
-
-    def createOutputFeature(self, geom, layer_name='ConcaveHull'):
+    def create_output_feature(self, geom, layer_name='ConcaveHull'):
         """
         Creates a memory layer named layer_name, default name ConcaveHull, using project CRS and
         suppressing the CRS settings dialog
 
-        :param geom: polygon as a WKT string
+        :param geom: list of polygons as a WKT string
         :param layer_name: string
-        :return: None
+        :return: boolean
         """
+        if self.dlg.rb_shapefile.isChecked():
+            shape_filename = self.dlg.ed_output_layer.text()
+            layer_name = 'ConcaveHull'
+            if shape_filename == '':
+                msg = self.msg_bar.createMessage(_translate('ConcaveHull', 'No shapefile name specified', None))
+                self.msg_bar.pushWidget(msg, QgsMessageBar.CRITICAL, 5)
+                return False
+        else:
+            if self.dlg.rb_new_memory_layer.isChecked():
+                layer_name = self.dlg.ed_memory_layer.text()
+            else:
+                layer_name = self.dlg.cb_output.currentText()
+
+        # if the layer does not exist it has to be created
         if not QgsMapLayerRegistry.instance().mapLayersByName(layer_name):
-            old_behaviour = self.enableUseOfGlobalCrs()
-            layer = QgsVectorLayer('Polygon', layer_name, 'memory')
+            srs = self.iface.mapCanvas().mapRenderer().destinationCrs().authid()
+            layer = QgsVectorLayer('Polygon?crs=' + str(srs), layer_name, 'memory')
             provider = layer.dataProvider()
-            QgsMapLayerRegistry.instance().addMapLayer(layer)
-            self.disableUseOfGlobalCrs(old_behaviour)
+
+        # if the layer already exists
         else:
             layer = QgsMapLayerRegistry.instance().mapLayersByName(layer_name)[0]
             provider = layer.dataProvider()
 
-        # add a feature
-        feature = QgsFeature()
-        feature.setGeometry(QgsGeometry.fromWkt(geom))
-        provider.addFeatures([feature])
+        # add hull geometry to data provider
+        for hull in geom:
+            feature = QgsFeature()
+            feature.setGeometry(QgsGeometry.fromWkt(hull))
+            provider.addFeatures([feature])
+
+        # if new memory layer simply add memory layer to the map
+        if self.dlg.rb_new_memory_layer.isChecked():
+            QgsMapLayerRegistry.instance().addMapLayer(layer)
+
+        # if features go to shapefile dump memory layer to shapefile
+        elif self.dlg.rb_shapefile.isChecked():
+            error = QgsVectorFileWriter.writeAsVectorFormat(layer, shape_filename, 'CP1250', None, 'ESRI Shapefile')
+            if error != QgsVectorFileWriter.NoError:
+                msg = self.msg_bar.createMessage(_translate('ConcaveHull', 'Error writing shapefile: ' + error, None))
+                self.msg_bar.pushWidget(msg, QgsMessageBar.ERROR, 5)
+                return False
+
+            # add the new layer to the map
+            if self.dlg.cb_add_to_map.isChecked():
+                base_name = os.path.splitext(os.path.basename(str(shape_filename)))[0]
+                layer_name = QgsVectorLayer(shape_filename, base_name, 'ogr')
+                QgsMapLayerRegistry.instance().addMapLayer(layer_name)
 
         # because change of extent in provider is not propagated to the layer
         layer.updateExtents()
         layer.triggerRepaint()
+        return True
 
-
-    def extractPoints(self, geom):
+    def extract_points(self, geom):
         """
         Generate list of QgsPoints from QgsGeometry *geom* ( can be point, line, or polygon )
         Code taken from fTools plugin
@@ -530,65 +562,70 @@ class ConcaveHull:
                     temp_geom.extend( i )
         return temp_geom
 
-
-    def getVectorLayersByType(self, geomType=None, skipActive=False):
+    def get_vector_layers_by_type(self, geom_type=None, skip_active=False):
         """
-        Returns a dict of layers [name: id] in the project for the given geomType.
-        If skipActive is True the active layer is not included.
+        Returns a dict of layers [name: id] in the project for the given geom_type.
+        If skip_active is True the active layer is not included.
         Code taken from DigitizingTools plugin, (C) 2013 by Bernhard Stroebl
 
-        :param geomType: integer; geomTypes are 0: point, 1: line, 2: polygon
+        :param geom_type: integer; geomTypes are 0: point, 1: line, 2: polygon
         :return: dict of layers with given geometry type
         """
         layer_list = {}
         for layer in self.iface.legendInterface().layers():
             if 0 == layer.type():   # vectorLayer
-                if skipActive and (self.iface.mapCanvas().currentLayer().id() == layer.id()):
+                if skip_active and (self.iface.mapCanvas().currentLayer().id() == layer.id()):
                     continue
                 else:
-                    if geomType is not None:
-                        if isinstance(geomType,  int):
-                            if layer.geometryType() == geomType:
-                                layer_list[layer.name()] =  layer.id()
+                    if geom_type is not None:
+                        if isinstance(geom_type,  int):
+                            if layer.geometryType() == geom_type:
+                                layer_list[layer.name()] = layer.id()
                         else:
-                            layer_list[layer.name()] =  layer.id()
+                            layer_list[layer.name()] = layer.id()
         return layer_list
 
-
-    def setOutputLayerComboBox(self, geomType=None, index=None):
+    def set_output_layer_combobox(self, geom_type=None, item=''):
         """
-        Populates the ComboBox with all layers of the given geometry type geomType, and sets
+        Populates the ComboBox with all layers of the given geometry type geom_type, and sets
         currentIndex to the entry named index.
 
-        :param geomType: integer; geomTypes are 0: point, 1: line, 2: polygon
+        :param geom_type: integer; geomTypes are 0: point, 1: line, 2: polygon
         :param index: string; name of the ComboBox entry to set currentIndex to
         :return: None
         """
         self.dlg.cb_output.clear()
-        layer_list = self.getVectorLayersByType(geomType, False)
+        layer_list = self.get_vector_layers_by_type(geom_type, False)
         if len(layer_list) > 0:
-            lid = 0
-            for aName in layer_list:
+            for index, aName in enumerate(layer_list):
                 self.dlg.cb_output.addItem('')
-                self.dlg.cb_output.setItemText(lid, aName)
-                if aName == index:
-                    self.dlg.cb_output.setCurrentIndex(lid)
-                lid += 1
-
+                self.dlg.cb_output.setItemText(index, aName)
+                if aName == item:
+                    self.dlg.cb_output.setCurrentIndex(index)
+        return None
 
     # run method that performs all the real work
     def run(self):
         # set dialog widgets
         self.dlg.ls_layers.clear()
+        self.dlg.buttonBox.button(QDialogButtonBox.Ok).setDisabled(True)
         has_selected_features = False
 
-        # all vector layers are added to the list view
-        for layer in self.iface.legendInterface().layers():
+        # check if an active layer exists
+        active_layer_name = ''
+        if self.iface.activeLayer() is not None:
+            active_layer_name = self.iface.activeLayer().name()
+
+        # all vector layers get added to the list
+        for index, layer in enumerate(self.iface.legendInterface().layers()):
             if layer.type() == QgsMapLayer.VectorLayer:
                 # if there are selected features toggle has_selected_features
                 if layer.selectedFeatureCount():
                     has_selected_features = True
                 self.dlg.ls_layers.addItem(layer.name())
+                # select the active layer by default
+                if layer.name() == active_layer_name:
+                    self.dlg.ls_layers.setCurrentRow(index)
 
         # if at least one vector layer has selected features enable checkbutton cb_selected_only
         if has_selected_features:
@@ -600,9 +637,9 @@ class ConcaveHull:
 
         # initialize cb_output
         # remember the layer being selected the last time
-        lbid = self.dlg.cb_output.currentText()
+        last_index = self.dlg.cb_output.currentText()
         # populate the combo box with the polygon layers listed in the current legend
-        self.setOutputLayerComboBox(2, lbid)
+        self.set_output_layer_combobox(2, last_index)
 
         # show the dialog
         self.dlg.show()
@@ -619,26 +656,56 @@ class ConcaveHull:
                 # convert each feature to points
                 if active_layer.selectedFeatureCount() and self.dlg.cb_selected_only.checkState():
                     for feat in active_layer.selectedFeatures():
-                        geom.extend(self.extractPoints(feat.geometry()))
+                        geom.extend(self.extract_points(feat.geometry()))
                 else:
                     for feat in active_layer.getFeatures():
-                        geom.extend(self.extractPoints(feat.geometry()))
+                        geom.extend(self.extract_points(feat.geometry()))
 
-            if len(geom) == 0:
+            num_points = len(geom)
+            if num_points == 0:
                 return None
+
+            # Send WARNING to the message bar to inform about a probably long running time
+            if num_points > 1000:
+                msg = self.msg_bar.createMessage(u'Please be patient, processing of more then {} points may take a while'.
+                                                 format(int(num_points)))
+                self.msg_bar.pushWidget(msg, QgsMessageBar.WARNING, 5)
+
+            # if more then 5000 points ask user to confirm
+            if num_points > 5000:
+                proceed = QMessageBox.question(None, 'Please confirm', 'Do you really want to proceed?',
+                                             QMessageBox.Yes | QMessageBox.No)
+                if proceed == QMessageBox.No:
+                    QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
+                    return None
+
+            # change cursor to inform user about ongoing processing
+            QApplication.instance().setOverrideCursor(Qt.BusyCursor)
 
             # generate the hull geometry
             # process points with prior clustering
-            # Todo: Warning ausgeben, wenn Anzahl der Punkte > ??? ist (kann sehr lange dauern!)
+            hull_list = []
             if self.dlg.gb_clustering.isChecked():
-                clusters = ssn_clusters(geom, self.dlg.sb_neighborhood_list_size.value()).get_clusters()
+                clusters = SSNClusters(geom, self.dlg.sb_neighborhood_list_size.value()).get_clusters()
                 for cluster in clusters.keys():
                     the_hull = self.concave_hull(clusters[cluster], self.dlg.sb_neighbors.value())
                     if the_hull:
-                        self.createOutputFeature(self.as_wkt(the_hull), self.dlg.cb_output.currentText())
+                        hull_list.append(self.as_wkt(the_hull))
             else:
                 # process points without clustering
                 the_hull = self.concave_hull(geom, self.dlg.sb_neighbors.value())
-                self.createOutputFeature(self.as_wkt(the_hull), self.dlg.cb_output.currentText())
+                hull_list.append(self.as_wkt(the_hull))
 
-            return None
+            # write hull geometries to output device
+            success = self.create_output_feature(hull_list)
+
+            # report result in QGIS message bar
+            if success:
+                msg = self.msg_bar.createMessage(_translate('ConcaveHull', '{} Concave hulls created successfully'.
+                                                            format(int(len(hull_list))), None))
+                self.msg_bar.pushWidget(msg, QgsMessageBar.INFO, 5)
+
+            # clear the message bar and reset cursor
+            QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
+
+        return None
