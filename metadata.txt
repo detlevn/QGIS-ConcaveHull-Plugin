@@ -11,7 +11,7 @@
 name=Concave Hull
 qgisMinimumVersion=2.0
 description=Computes a concave hull containing a set of features
-version=1.0
+version=1.0.1
 author=Detlev Neumann, Geospatial Services
 email=dneumann@geospatial-services.de 
 
@@ -22,8 +22,9 @@ email=dneumann@geospatial-services.de
 # Uncomment the following line and add your changelog entries:
 category=Vector
 # changelog=
-# 1.0
-# First version published as QGIS plugin
+# 1.0.0  First version published on QGIS Python Plugins Repository (2015/01/07)
+# 1.0.1  Give more feedback to the user (2015/01/08)
+#        Proper handling of UI events; added language DE (2015/01/09)
 
 # tags are comma separated with spaces allowed
 tags=concave hull, region, vector, analysis
@@ -34,7 +35,7 @@ repository=https://github.com/detlevn/QGIS-ConcaveHull-Plugin
 icon=icon.png
 
 # experimental flag
-experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version
 deprecated=False

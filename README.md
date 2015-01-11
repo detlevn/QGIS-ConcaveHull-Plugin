@@ -65,9 +65,17 @@ Thanks to Joel Lawhead and his book: Learning Geospatial Analysis with Python. E
 
 ##Todo
 
+* Support for Processing Toolbox
+
 * Processing of groups of points depending on values of one or more attributes
 
 * Optimization of code in terms of running time and readability
+
+##Version history
+
+* Version 1.0.0 (2015/01/07): first version
+
+* Version 1.0.1 (2015/01/10): added UI event handlers, more user feedback, and standard file selection dialog
 
 ##Bibliography
 
