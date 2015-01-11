@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/plugins/concavehull" >
-        <file>icon.png</file>
+        <file>icon.svg</file>
     </qresource>
 </RCC>

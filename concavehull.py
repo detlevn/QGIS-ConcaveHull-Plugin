@@ -72,7 +72,7 @@ class ConcaveHull:
         Create action that will start plugin configuration
         """
         self.action = QAction(
-            QIcon(":/plugins/concavehull/icon.png"),
+            QIcon(":/plugins/concavehull/icon.svg"),
             u"Concave Hull", self.iface.mainWindow())
         # connect the action to the run method
         self.action.triggered.connect(self.run)
