@@ -170,7 +170,7 @@
          <item>
           <widget class="QSlider" name="hs_neighborhood_list_size">
            <property name="minimum">
-            <number>5</number>
+            <number>4</number>
            </property>
            <property name="maximum">
             <number>100</number>
@@ -195,7 +195,7 @@
          <item>
           <widget class="QSpinBox" name="sb_neighborhood_list_size">
            <property name="minimum">
-            <number>5</number>
+            <number>4</number>
            </property>
            <property name="maximum">
             <number>100</number>

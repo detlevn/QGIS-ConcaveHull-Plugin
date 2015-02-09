@@ -176,15 +176,15 @@ class SSNClusters():
                     self.ssn_array[i].ClusterID = 0
 
     def get_max(self, kn):
-        Max = float
+        max = float
         for idx in range(0, len(kn)):
             if idx == 0:
-                Max = kn[idx].distance_to
-                MaxInd = idx
-            elif kn[idx].distance_to > Max:
-                Max = kn[idx].distance_to
-                MaxInd = idx
-        return MaxInd
+                max = kn[idx].distance_to
+                max_idx = idx
+            elif kn[idx].distance_to > max:
+                max = kn[idx].distance_to
+                max_idx = idx
+        return max_idx
 
     def get_clusters(self):
         self.get_knearest()
