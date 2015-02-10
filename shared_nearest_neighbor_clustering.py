@@ -14,14 +14,14 @@ class kinf:
 
 
 class inf:
-    def __init__(self, p, t, cx, cy, kn, d, cid):
+    def __init__(self, p, type, coord_x, coord_y, knearest, density, cluster_id):
         self.Point = int(p)
-        self.Type = t
-        self.coord_x = float(cx)
-        self.coord_y = float(cy)
+        self.type = type
+        self.coord_x = float(coord_x)
+        self.coord_y = float(coord_y)
         self.knearest = []
-        self.Density = -1
-        self.ClusterID = cid
+        self.density = -1
+        self.cluster_id = cluster_id
 
 
 class SSNClusters():
@@ -105,36 +105,36 @@ class SSNClusters():
         for i in range(0, len(self.ssn_array)):
             for j in range(0, len(self.ssn_array[i].knearest)):
                 if self.ssn_array[i].knearest[j].NumOfSharedNeigh >= self.EPS:
-                    self.ssn_array[i].Density = self.ssn_array[i].Density + (1 * self.ssn_array[i].knearest[j].is_linked)
+                    self.ssn_array[i].density = self.ssn_array[i].density + (1 * self.ssn_array[i].knearest[j].is_linked)
                 else:
-                    self.ssn_array[i].Density = self.ssn_array[i].Density + (0 * self.ssn_array[i].knearest[j].is_linked)
+                    self.ssn_array[i].density = self.ssn_array[i].density + (0 * self.ssn_array[i].knearest[j].is_linked)
 
     def check_cores(self):
         for i in range(0, len(self.ssn_array)):
-            if self.ssn_array[i].Density >= self.MinPts:
-                self.ssn_array[i].Type = 'Core'
+            if self.ssn_array[i].density >= self.MinPts:
+                self.ssn_array[i].type = 'Core'
                 self.MyColec.insert(len(self.MyColec), i)
             else:
-                self.ssn_array[i].Type = 'Border'
+                self.ssn_array[i].type = 'Border'
                 self.MyColec.insert(len(self.MyColec), i)
 
     def build_clusters(self):
-        ClusterID = 0
+        cluster_id = 0
         for i in range(0, len(self.ssn_array)):
-            if self.ssn_array[i].Type != 'Noise' and self.ssn_array[i].ClusterID == -1:
-                ClusterID += 1
-                self.ssn_array[i].ClusterID = ClusterID
-                self.cluster_neighbors(self.ssn_array[i].Point, ClusterID)
+            if self.ssn_array[i].type != 'Noise' and self.ssn_array[i].cluster_id == -1:
+                cluster_id += 1
+                self.ssn_array[i].cluster_id = cluster_id
+                self.cluster_neighbors(self.ssn_array[i].Point, cluster_id)
 
         for i in range(0, len(self.ssn_array)):
-            if self.ssn_array[i].ClusterID > 0:
-                if self.ssn_array[i].ClusterID in self.cluster_dict.keys():
-                    self.cluster_dict[self.ssn_array[i].ClusterID].append((self.ssn_array[i].coord_x, self.ssn_array[i].coord_y))
+            if self.ssn_array[i].cluster_id > 0:
+                if self.ssn_array[i].cluster_id in self.cluster_dict.keys():
+                    self.cluster_dict[self.ssn_array[i].cluster_id].append((self.ssn_array[i].coord_x, self.ssn_array[i].coord_y))
                 else:
-                    self.cluster_dict[self.ssn_array[i].ClusterID] = [(self.ssn_array[i].coord_x, self.ssn_array[i].coord_y)]
-        return ClusterID
+                    self.cluster_dict[self.ssn_array[i].cluster_id] = [(self.ssn_array[i].coord_x, self.ssn_array[i].coord_y)]
+        return cluster_id
 
-    def cluster_neighbors(self, Point, ClusterID):
+    def cluster_neighbors(self, Point, cluster_id):
         neighbors = []
         index = None
         new_point = None
@@ -147,9 +147,9 @@ class SSNClusters():
             new_point = neighbors[j].Point # 1 of the ssn_array(m).point K's
             for l in range(0, len(self.ssn_array)):
                 if self.ssn_array[l].Point == new_point:
-                    if self.ssn_array[l].Type != 'Noise' and self.ssn_array[l].ClusterID == -1 and neighbors[j].NumOfSharedNeigh >= self.EPS:
-                        self.ssn_array[l].ClusterID = ClusterID
-                        self.cluster_neighbors(new_point, ClusterID)
+                    if self.ssn_array[l].type != 'Noise' and self.ssn_array[l].cluster_id == -1 and neighbors[j].NumOfSharedNeigh >= self.EPS:
+                        self.ssn_array[l].cluster_id = cluster_id
+                        self.cluster_neighbors(new_point, cluster_id)
 
     def check_similarity(self, i, j):
         result = 0
@@ -157,8 +157,8 @@ class SSNClusters():
             if self.ssn_array[i].Point == self.ssn_array[j].knearest[m].Point:
                 for n in range(0, len(self.ssn_array[i].knearest)):
                     if self.ssn_array[j].Point == self.ssn_array[i].knearest[n].Point:
-                         result = self.ssn_array[i].knearest[n].Point
-                         break
+                        result = self.ssn_array[i].knearest[n].Point
+                        break
         return result
 
     def noise_points(self):
@@ -166,14 +166,14 @@ class SSNClusters():
         similarity2 = None
         for i in range(0, len(self.ssn_array)):
             similarity1 = 0
-            if self.ssn_array[i].Type == 'Border':
+            if self.ssn_array[i].type == 'Border':
                 for j in range(0, len(self.MyColec)):
                     similarity2 = self.check_similarity(i, j)
                     if similarity2 > similarity1:
                         similarity1 = similarity2
                 if similarity1 < self.EPS:
-                    self.ssn_array[i].Type = 'Noise'
-                    self.ssn_array[i].ClusterID = 0
+                    self.ssn_array[i].type = 'Noise'
+                    self.ssn_array[i].cluster_id = 0
 
     def get_max(self, kn):
         max = float
