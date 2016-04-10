@@ -763,12 +763,22 @@ class ConcaveHull:
 # Import Processing libraries to add the algorithms to Processing toolbox
 from processing.core.Processing import Processing
 from processing.core.GeoAlgorithm import GeoAlgorithm
-from processing.core.parameters import ParameterVector
-from processing.core.parameters import ParameterNumber
-from processing.core.parameters import ParameterTableField
-from processing.core.parameters import ParameterBoolean
-from processing.core.parameters import ParameterSelection
-from processing.core.outputs import OutputVector
+try:
+ # QGIS 2.2
+	from processing.parameters.ParameterVector import ParameterVector
+	from processing.parameters.ParameterNumber import ParameterNumber
+	from processing.parameters.ParameterTableField import ParameterTableField
+	from processing.parameters.ParameterBoolean import ParameterBoolean
+	from processing.parameters.ParameterSelection import ParameterSelection
+	from processing.outputs.OutputVector import OutputVector
+except:
+	# QGIS 2.0
+	from processing.core.parameters import ParameterVector
+	from processing.core.parameters import ParameterNumber
+	from processing.core.parameters import ParameterTableField
+	from processing.core.parameters import ParameterBoolean
+	from processing.core.parameters import ParameterSelection
+	from processing.core.outputs import OutputVector
 from processing.tools import dataobjects, vector
 from processing.core.AlgorithmProvider import AlgorithmProvider
 from processing.core.GeoAlgorithmExecutionException import GeoAlgorithmExecutionException
