@@ -88,7 +88,7 @@ Thanks to Joel Lawhead and his book: Learning Geospatial Analysis with Python. E
 
 * Processing of PostGIS-features takes a much too long running time.
 
-##Version history
+## Version history
 
 * Version 1.0.2 (2015/02/10): added algorithms to processing framework, standard attributes, grouping based on fields
 
