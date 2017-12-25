@@ -1,12 +1,12 @@
-#QGIS-ConcaveHull-Plugin
+# QGIS-ConcaveHull-Plugin
 
 Computes a concave hull containing a set of features according to the algorithm described in detail by Adriano Moreira and Maribel Yasmina Santos (2007). Prior construction of the hull the data may optionally clustered using a Shared Nearest Neighbor Clustering algorithm after Ertoz, Steinbach & Kumar (2003).
 
-##About this plugin
+## About this plugin
 
 Computes a minimum area containing a set of features. The concave hull is supposed to best describe that area occupied by the given set of points. The resulting polygon geometries are stored in an existing polygon layer or new memory layer. Prior computation of the hull the given data can optionally be divided into clusters.
 
-##Using the plugin
+## Using the plugin
 
 Specify an initial number k of nearest neighbors for the algorithm to inspect. If no valid hull can be constructed the algorithm will restart with an increased number of neighbors. It proceeds until all features are enclosed by a non self-intersecting polygon.
 
@@ -20,14 +20,14 @@ Output can go to a new memory layer, an existing map layer, or a new shape file.
 
 Hull polygons get the attributes id and count. Count receives the number of points falling inside this polygon.
 
-##Examples
+## Examples
 
 Included with this plugin are two test datasets with similar point distribution as describe in Moreira and Santos (2007). These are the results:
 
 ![Example 1 point distribution](/images/expl01.png)
 Point distribution for example 1
 
-![Example 1 withour clustering](/images/expl01_conch_3.png)
+![Example 1 without clustering](/images/expl01_conch_3.png)
 Concave hull without clustering, starting with k=3
 
 ![Example 1 subset of points, k=3](/images/expl01_conch_3_a.png)
@@ -48,7 +48,7 @@ First clustered (5 neighbors), then concave hull with k=5
 ![Example 3](/images/expl03_clust_field_conch.png)
 First clustered by location and field (categories represented by point color), then concave hull based on clusterId
 
-##Processing framework
+## Processing framework
 
 Concave hull and clustering algorithm are both accessible in the QGIS processing framework. The algorithms can be used individually and can be combined with other geoprocessing tools to build more complex workflows.
 
@@ -60,7 +60,7 @@ Building concave hulls based on clusterId of location based clustered input geom
 
 ![Workflow](/images/proc_workflow.png)
 
-##Notes
+## Notes
 
 * In general the concave hull computed by this algorithm is more concave then that computed by the alpha-shape algorithm. 
 
@@ -76,13 +76,13 @@ Building concave hulls based on clusterId of location based clustered input geom
 
 * Construction of concave hulls based on points grouped by an attribute may lead to overlapping polygons, since these groups are processed independently. Overlapping concave hulls may be an indicator for interspersed distribution of variables.
 
-##Acknowledgment
+## Acknowledgment
 
 The clustering method is based on python code written by some guy named jonno (http://www.georeference.org/forum/t76320). Visited in November, 2014.
 
 Thanks to Joel Lawhead and his book: Learning Geospatial Analysis with Python. Especially for the implementation of the ray-casting algorithm.
 
-##Todo
+## Todo
 
 * Optimization of code in terms of running time and readability
 
@@ -96,7 +96,7 @@ Thanks to Joel Lawhead and his book: Learning Geospatial Analysis with Python. E
 
 * Version 1.0.0 (2015/01/07): first version
 
-##Bibliography
+## Bibliography
 
 Levent Ertoz, Michael Steinbach and Vipin Kumar (2003): Finding Clusters of Different Sizes, Shapes, and Densities in Noisy, High Dimensional Data. In Proceedings of the Second SIAM International Conference on Data Mining, San Francisco, CA, USA, May
 
