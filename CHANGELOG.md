@@ -1,5 +1,16 @@
 ## CHANGELOG
 
+### Version 2.0.0 (2019/01/03): 
+* First version for QGIS 3.4
+* UI: grouping based on attributes is now supported (Issue #4)
+* UI: Added Apply function, allows interactive processing and makes it an powerful edit tool for creating polygons 
+  from given points
+* SNNCluster: noise points will be written to a layer for inspection
+* SNNCluster: only clustered input points can be output to a layer without creating hulls
+* UI: plugin is now displays more messages to let the user know what is going on (Issue #9)
+* ConcaveHull: Several minor issues are fixed
+* PROC: algorithms for processing framework are not provided any more, because the KNN algorithm is already shipped with QGIS
+
 ### Version 1.0.2
 
 * ConcaveHull: Added attributes id, count, and group by field to output

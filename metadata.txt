@@ -1,27 +1,39 @@
-# This file contains metadata for your plugin. Beginning
-# with version 1.8 this is the preferred way to supply information about a
-# plugin. The current method of embedding metadata in __init__.py will
-# be supported until version 2.0
+# This file contains metadata for your plugin. Since 
+# version 2.0 of QGIS this is the proper way to supply 
+# information about a plugin. The old method of 
+# embedding metadata in __init__.py will 
+# is no longer supported since version 2.0.
 
 # This file should be included when you package your plugin.
-
 # Mandatory items:
 
 [general]
 name=Concave Hull
-qgisMinimumVersion=2.0
+qgisMinimumVersion=3.0
 description=Computes a concave hull containing a set of features
-version=1.0.2
+version=2.0
 author=Detlev Neumann, Geospatial Services
-email=dneumann@geospatial-services.de 
+email=dneumann@geospatial-services.de
 
-# end of mandatory metadata
+about=Computes a minimum area containing a set of features. The concave hull is supposed to best describe that area occupied by the given set of points. The resulting polygon geometries are stored in an existing polygon layer or new memory layer. Prior computation of the hull the given data can optionally be divided into clusters.
 
-# Optional items:
+tracker=https://github.com/detlevn/QGIS-ConcaveHull-Plugin/issues
+repository=https://github.com/detlevn/QGIS-ConcaveHull-Plugin
+# End of mandatory metadata
 
-# Uncomment the following line and add your changelog entries:
-category=Vector
-changelog=1.0.2
+# Recommended items:
+
+# Uncomment the following line and add your changelog:
+changelog=2.0.0
+    - First version for QGIS 3.4 (2019/01/03)
+    - Added grouping based on attributes (Issue #4)
+    - Added Apply function, allows interactive processing and makes it an powerful edit tool for creating polygons from given points
+    - Added option to output noise points to a layer for inspection
+    - Added option to only output clustered input points to a layer without creating hulls
+    - Improved: plugin is now displays more messages to let the user know what is going on (Issue #9)
+    - General: several minor issues are fixed
+    - Removed algorithms for processing framework, because the KNN algorithm is already shipped with QGIS
+  1.1.0
     - Added standard attributes (id, count, clusterId, group by field)
     - Added support for field based grouping in processing algorithms
     - Fixed issue #3 Deploying algorithms in processing framework (2015/02/10)
@@ -33,16 +45,15 @@ changelog=1.0.2
   1.0.0
     - First version published on QGIS Python Plugins Repository (2015/01/07)
 
-# tags are comma separated with spaces allowed
-tags=concave hull, region, vector, analysis
+# Tags are comma separated with spaces allowed
+tags=python, concave hull, region, vector, analysis, create
 
 homepage=https://github.com/detlevn/QGIS-ConcaveHull-Plugin
-tracker=https://github.com/detlevn/QGIS-ConcaveHull-Plugin/issues
-repository=https://github.com/detlevn/QGIS-ConcaveHull-Plugin
+category=Plugins, Vector
 icon=icon.png
-
 # experimental flag
 experimental=False
 
-# deprecated flag (applies to the whole plugin, not just a single version
+# deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
+

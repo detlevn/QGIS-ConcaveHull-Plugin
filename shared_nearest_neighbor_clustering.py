@@ -2,8 +2,8 @@
 http://www.georeference.org/forum/t76320 by jonno
 """
 
-
 import math
+
 
 class kinf:
     def __init__(self, p, dt, nsn, il):
@@ -43,18 +43,26 @@ class SSNClusters():
             self.ssn_array.insert(count, p)
             count += 1
 
+        self.create_clusters()
+
     def insertKN(self, i, val):
         kn = self.ssn_array[i].knearest
         kn.insert(len(kn)-1, val)
 
     def get_knearest(self):
+        pairs = {}
         for i in range(0, len(self.ssn_array)):
             count = 0
             for j in range(0, len(self.ssn_array)):
                 if i != j:
                     count += 1
-                    dist = math.sqrt(((self.ssn_array[i].coord_x - self.ssn_array[j].coord_x) * (self.ssn_array[i].coord_x - self.ssn_array[j].coord_x))
-                                     + ((self.ssn_array[i].coord_y - self.ssn_array[j].coord_y) * (self.ssn_array[i].coord_y - self.ssn_array[j].coord_y)))
+
+                    if (j, i) in pairs:
+                        dist = pairs[(j, i)]
+                    else:
+                        dist = math.sqrt(((self.ssn_array[i].coord_x - self.ssn_array[j].coord_x) * (self.ssn_array[i].coord_x - self.ssn_array[j].coord_x))
+                                         + ((self.ssn_array[i].coord_y - self.ssn_array[j].coord_y) * (self.ssn_array[i].coord_y - self.ssn_array[j].coord_y)))
+                        pairs[(j, i)] = dist
 
                     if count <= self.K:
                         kn = kinf(self.ssn_array[j].Point, dist, None, 0)
@@ -98,7 +106,6 @@ class SSNClusters():
                                         count_share += 1
 
                             self.ssn_array[i].knearest[j].NumOfSharedNeigh = count_share
-
                             break
 
     def calculate_density(self):
@@ -140,11 +147,11 @@ class SSNClusters():
         new_point = None
         for m in range(0, len(self.ssn_array)):
             if self.ssn_array[m].Point == Point:
-                neighbors = self.ssn_array[m].knearest # all k's of the ssn_array(m).point
+                neighbors = self.ssn_array[m].knearest  # all k's of the ssn_array(m).point
                 index = m
                 break
         for j in range(0, len(neighbors)):
-            new_point = neighbors[j].Point # 1 of the ssn_array(m).point K's
+            new_point = neighbors[j].Point  # 1 of the ssn_array(m).point K's
             for l in range(0, len(self.ssn_array)):
                 if self.ssn_array[l].Point == new_point:
                     if self.ssn_array[l].type != 'Noise' and self.ssn_array[l].cluster_id == -1 and neighbors[j].NumOfSharedNeigh >= self.EPS:
@@ -184,13 +191,29 @@ class SSNClusters():
             elif kn[idx].distance_to > max:
                 max = kn[idx].distance_to
                 max_idx = idx
+
         return max_idx
 
-    def get_clusters(self):
+    def get_outliers(self):
+        """Returns points which are not part of any cluster
+        """
+        noise_points = []
+        for i in range(0, len(self.ssn_array)):
+            if self.ssn_array[i].type == 'Noise':
+                noise_points.append((self.ssn_array[i].coord_x, self.ssn_array[i].coord_y))
+
+        return noise_points
+
+    def count(self):
+        return len(self.cluster_dict)
+
+    def create_clusters(self):
         self.get_knearest()
         self.shared_nearest()
         self.calculate_density()
         self.check_cores()
         self.noise_points()
         self.build_clusters()
+
+    def get_clusters(self):
         return self.cluster_dict
